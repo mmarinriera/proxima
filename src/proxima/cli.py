@@ -48,11 +48,11 @@ def cli_callback(
     ctx.obj["api_token"] = _load_api_key()
 
 
-def _parse_output(data: list[dict[str, str]], output: list[str]) -> list[dict[str, str]]:
-    parsed_data = []
+def _parse_output(data: list[dict[str, str]], output: list[str] | None = None) -> list[dict[str, str]]:
     if not output:
-        return parsed_data
+        return data
 
+    parsed_data = []
     for item in data:
         parsed_data.append({o: item[o] for o in output})
     return parsed_data
@@ -73,4 +73,22 @@ def discover_movies(
     res = tmdb.discover_movies(year_from=year_from, year_to=year_to, min_votes=min_votes)
     data: list[dict[str, str]] = res["results"]
     print(_parse_output(data, ["title", "vote_average", "overview"]))
+    print(f"Showed {len(data)} results.")
+
+
+@proxima.command()
+def discover_tv(
+    ctx: typer.Context,
+    year_from: Annotated[int | None, typer.Option("--from")] = None,
+    year_to: Annotated[int | None, typer.Option("--until")] = None,
+    min_votes: int = 1000,
+) -> None:
+    """
+    TMDB discover movies
+    """
+    tmdb = TMDBClient(api_token=ctx.obj["api_token"])
+
+    res = tmdb.discover_tv(year_from=year_from, year_to=year_to, min_votes=min_votes)
+    data: list[dict[str, str]] = res["results"]
+    print(_parse_output(data, ["name", "vote_average", "overview"]))
     print(f"Showed {len(data)} results.")
