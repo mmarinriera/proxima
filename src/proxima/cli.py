@@ -59,11 +59,18 @@ def _parse_output(data: list[dict[str, str]], output: list[str]) -> list[dict[st
 
 
 @proxima.command()
-def discover_movies(ctx: typer.Context) -> None:
+def discover_movies(
+    ctx: typer.Context,
+    year_from: Annotated[int | None, typer.Option("--from")] = None,
+    year_to: Annotated[int | None, typer.Option("--until")] = None,
+    min_votes: int = 1000,
+) -> None:
     """
     TMDB discover movies
     """
     tmdb = TMDBClient(api_token=ctx.obj["api_token"])
 
-    res = tmdb.discover_movies(min_votes=1000)
-    print(_parse_output(res["results"], ["title", "vote_average", "overview"]))
+    res = tmdb.discover_movies(year_from=year_from, year_to=year_to, min_votes=min_votes)
+    data: list[dict[str, str]] = res["results"]
+    print(_parse_output(data, ["title", "vote_average", "overview"]))
+    print(f"Showed {len(data)} results.")
