@@ -1,0 +1,61 @@
+exclude: ^(resources|tests/resources)/
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.0
+    hooks:
+      - id: ruff
+        name: Run ruff to auto-fix lint errors
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: Run ruff to format code
+        types_or: [python, pyi]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+      - id: debug-statements
+        language_version: python3
+
+  - repo: https://github.com/astral-sh/ty-pre-commit
+    rev: v0.0.73
+    hooks:
+      - id: ty
+
+  - repo: https://github.com/rohaquinlop/complexipy-pre-commit
+    rev: v7.0.1
+    hooks:
+      - id: complexipy
+        name: Check code cognitive complexity
+        args: ["--failed"]
+
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.16.5
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.11.31
+    hooks:
+      - id: uv-lock
+        name: Update uv lock file
+
+  - repo: https://github.com/jsh9/pydoclint
+    rev: 0.9.1
+    hooks:
+      - id: pydoclint
+        files: ^src/fetx/
+
+  - repo: https://github.com/tox-dev/pyproject-fmt
+    rev: v2.25.3
+    hooks:
+      - id: pyproject-fmt
+
+  - repo: https://github.com/google/yamlfmt
+    rev: v0.21.0
+    hooks:
+      - id: yamlfmt
