@@ -50,8 +50,16 @@ class TMDBClient:
             params["page"] = page
             logger.debug(f"querying page {page}")
             data = self._get(url, params)
+
+            if page == 1 and data["total_results"] < n_results:
+                logger.warning(f"Only {data['total_results']} are available.")
+                n_results = data["total_results"]
+
             results.extend(data["results"])
             logger.debug(f"results so far {len(results)}")
+            if data["total_pages"] == page:
+                break
+
         return results[:n_results]
 
     def discover_movies(
