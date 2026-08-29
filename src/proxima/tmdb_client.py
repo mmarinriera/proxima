@@ -1,9 +1,12 @@
-from __future__ import annotations
-
+import logging
 import os
 from typing import Any
 
 import httpx
+
+logger = logging.getLogger(__name__)
+
+MAX_N_RESULTS = 100
 
 
 class TMDBClient:
@@ -34,6 +37,23 @@ class TMDBClient:
         response.raise_for_status()
         return response.json()
 
+    def _aggregate_results(self, url: str, params: dict[str, Any], n_results: int) -> list[dict[str, str]]:
+        if n_results > MAX_N_RESULTS:
+            logger.warning(
+                f"Max number of results queried at once is {MAX_N_RESULTS}. Capped query to {MAX_N_RESULTS}."
+            )
+            n_results = MAX_N_RESULTS
+        results = []
+        page = 0
+        while len(results) < n_results:
+            page += 1
+            params["page"] = page
+            logger.debug(f"querying page {page}")
+            data = self._get(url, params)
+            results.extend(data["results"])
+            logger.debug(f"results so far {len(results)}")
+        return results[:n_results]
+
     def discover_movies(
         self,
         *,
@@ -43,15 +63,14 @@ class TMDBClient:
         min_rating: float | None = None,
         min_votes: int | None = None,
         sort_by: str = "vote_average.desc",
-        page: int = 1,
-    ) -> dict[str, Any]:
+        n_results: int = 20,
+    ) -> list[dict[str, str]]:
 
         params: dict[str, Any] = {
             "language": "en-US",
             "include_adult": False,
             "include_video": False,
             "sort_by": sort_by,
-            "page": page,
         }
 
         if genre is not None:
@@ -69,7 +88,7 @@ class TMDBClient:
         if min_votes is not None:
             params["vote_count.gte"] = min_votes
 
-        return self._get("/discover/movie", params)
+        return self._aggregate_results(url="/discover/movie", params=params, n_results=n_results)
 
     def discover_tv(
         self,
@@ -80,14 +99,13 @@ class TMDBClient:
         min_rating: float | None = None,
         min_votes: int | None = None,
         sort_by: str = "vote_average.desc",
-        page: int = 1,
-    ) -> dict[str, Any]:
+        n_results: int = 20,
+    ) -> list[dict[str, str]]:
 
         params: dict[str, Any] = {
             "language": "en-US",
             "include_adult": False,
             "sort_by": sort_by,
-            "page": page,
         }
 
         if genre is not None:
@@ -105,4 +123,4 @@ class TMDBClient:
         if min_votes is not None:
             params["vote_count.gte"] = min_votes
 
-        return self._get("/discover/tv", params)
+        return self._aggregate_results(url="/discover/tv", params=params, n_results=n_results)
