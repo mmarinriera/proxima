@@ -6,6 +6,7 @@ import typer
 from dotenv import load_dotenv
 from rich import print
 
+from proxima import console
 from proxima import get_version
 from proxima import set_logging_level
 from proxima.tmdb_client import TMDBClient
@@ -80,7 +81,7 @@ def discover_movies(
     tmdb = TMDBClient(api_token=ctx.obj["api_token"])
 
     data = tmdb.discover_movies(year_from=year_from, year_to=year_to, min_votes=min_votes, n_results=n_results)
-    _print_output(data, ["title", "vote_average", "overview"])
+    console.print_item_list(data, ["title", "vote_average", "overview"])
 
 
 @proxima.command()
@@ -97,4 +98,4 @@ def discover_tv(
     tmdb = TMDBClient(api_token=ctx.obj["api_token"])
 
     data = tmdb.discover_tv(year_from=year_from, year_to=year_to, min_votes=min_votes, n_results=n_results)
-    _print_output(data, ["name", "vote_average", "overview"])
+    console.print_item_list(data, ["name", "vote_average", "overview"])
