@@ -10,6 +10,8 @@ from hishel.httpx import SyncCacheClient
 logger = logging.getLogger(__name__)
 
 MAX_N_RESULTS = 100
+DEFAULT_CACHE_TTL = 3600 * 24  # 24h
+DEFAULT_CACHE_PATH = ".cache/hishel/hishel_cache.db"
 
 policy = SpecificationPolicy(
     cache_options=CacheOptions(
@@ -17,7 +19,7 @@ policy = SpecificationPolicy(
     )
 )
 
-storage = SyncSqliteStorage(database_path=".cache/hishel/hishel_cache.db")
+storage = SyncSqliteStorage(database_path=DEFAULT_CACHE_PATH, default_ttl=DEFAULT_CACHE_TTL)
 
 
 class TMDBClient:
@@ -27,7 +29,7 @@ class TMDBClient:
         self.api_token = api_token or os.environ["TMDB_API_TOKEN"]
 
         self.session = SyncCacheClient(
-            storage=storage,
+            storage=SyncSqliteStorage(database_path=".cache/hishel/hishel_cache.db", default_ttl=DEFAULT_CACHE_TTL),
             policy=policy,
             headers={
                 "Authorization": f"Bearer {self.api_token}",
