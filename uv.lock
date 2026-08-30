@@ -120,7 +120,7 @@ wheels = [
 ]
 
 [[package]]
-name = "proxima-fetx"
+name = "proxima"
 version = "0.0.0"
 source = { editable = "." }
 dependencies = [

@@ -3,7 +3,7 @@ build-backend = "uv_build"
 requires = [ "uv-build>=0.12.2,<0.13" ]
 
 [project]
-name = "proxima-fetx"
+name = "proxima"
 version = "0.0.0"
 description = "Add your description here"
 readme = "README.md"
