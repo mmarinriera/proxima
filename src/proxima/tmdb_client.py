@@ -2,11 +2,22 @@ import logging
 import os
 from typing import Any
 
-import httpx
+from hishel import CacheOptions
+from hishel import SpecificationPolicy
+from hishel import SyncSqliteStorage
+from hishel.httpx import SyncCacheClient
 
 logger = logging.getLogger(__name__)
 
 MAX_N_RESULTS = 100
+
+policy = SpecificationPolicy(
+    cache_options=CacheOptions(
+        shared=False,
+    )
+)
+
+storage = SyncSqliteStorage(database_path=".cache/hishel/hishel_cache.db")
 
 
 class TMDBClient:
@@ -15,12 +26,13 @@ class TMDBClient:
     def __init__(self, api_token: str | None = None):
         self.api_token = api_token or os.environ["TMDB_API_TOKEN"]
 
-        self.session = httpx.Client()
-        self.session.headers.update(
-            {
+        self.session = SyncCacheClient(
+            storage=storage,
+            policy=policy,
+            headers={
                 "Authorization": f"Bearer {self.api_token}",
                 "accept": "application/json",
-            }
+            },
         )
 
     def _get(
@@ -29,10 +41,11 @@ class TMDBClient:
         params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         response = self.session.get(
-            f"{self.BASE_URL}{endpoint}",
+            url=f"{self.BASE_URL}{endpoint}",
             params=params,
             timeout=10,
         )
+        logger.debug(f"from cache: {response.extensions['hishel_from_cache']}")
 
         response.raise_for_status()
         return response.json()
