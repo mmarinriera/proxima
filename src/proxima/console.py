@@ -1,12 +1,18 @@
 import itertools
-from typing import Any
+import logging
 
+import typer
 from rich.columns import Columns
 from rich.console import Console
 from rich.padding import Padding
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
+
+from proxima.tmdb_client import TMDBItem
+
+logger = logging.getLogger(__name__)
+
 
 COLOR_PALETTE = [
     38,  # "deep_sky_blue2"
@@ -34,23 +40,26 @@ def print_genres(genres_list: list[str], category: str) -> None:
 
 
 def print_item_list(
-    item_list: list[dict[str, Any]],
-    fields: list[str] | None = None,
+    item_list: list[TMDBItem],
+    fields: list[str],
 ) -> None:
-    if fields is None:
-        fields = list(item_list[0].keys())
+    fields_not_found = [f for f in fields if not hasattr(item_list[0], f)]
+    if fields_not_found:
+        joined = "', '".join(fields_not_found)
+        logger.critical(f"Fields '{joined}' not found in '{type(item_list[0]).__name__}'")
+        raise typer.Exit(1)
 
     for idx, item in enumerate(item_list):
         grid = Table.grid(expand=True)
         grid.add_column()
         grid.add_column()
-        for ci, key in zip(itertools.cycle(COLOR_PALETTE), fields):
-            content = item[key]
+        for color, key in zip(itertools.cycle(COLOR_PALETTE), fields):
+            content = getattr(item, key)
             if isinstance(content, list):
                 content = ", ".join(content)
             grid.add_row(
-                Padding(Text(f"{key}:", style=f"bold color({ci})"), pad=PAD),
-                Padding(Text(str(content), style=f"color({ci})"), pad=PAD),
+                Padding(Text(f"{key.replace('_', ' ').capitalize()}:", style=f"bold color({color})"), pad=PAD),
+                Padding(Text(str(content), style=f"color({color})"), pad=PAD),
             )
 
         CONSOLE.print(Panel(grid, title=f"{idx + 1}", title_align="left"))

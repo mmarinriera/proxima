@@ -1,6 +1,7 @@
 import logging
 import os
 from enum import Enum
+from typing import Annotated
 from typing import Any
 from typing import Self
 
@@ -8,6 +9,8 @@ from hishel import CacheOptions
 from hishel import SpecificationPolicy
 from hishel import SyncSqliteStorage
 from hishel.httpx import SyncCacheClient
+from pydantic import BaseModel
+from pydantic import Field
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +36,57 @@ class GenreError(Exception):
 class MediaCategory(Enum):
     movie = "movie"
     tv = "tv"
+
+
+class TMDBItem(BaseModel):
+    backdrop_path: str
+    genre_ids: list[int]
+    id: int
+    original_language: str
+    original_title: str
+    overview: str
+    popularity: float
+    poster_path: str
+    release_date: str
+    title: str
+    vote_average: float
+    vote_count: int
+    genres: Annotated[list[str], Field(default_factory=list)]
+
+
+class MovieItem(TMDBItem):
+    adult: bool
+    backdrop_path: str
+    genre_ids: list[int]
+    id: int
+    original_language: str
+    original_title: str
+    overview: str
+    popularity: float
+    poster_path: str
+    release_date: str
+    title: str
+    video: bool
+    vote_average: float
+    vote_count: int
+    genres: Annotated[list[str], Field(default_factory=list)]
+
+
+class TVItem(TMDBItem):
+    backdrop_path: str
+    genre_ids: list[int]
+    id: int
+    origin_country: list[str]
+    original_language: str
+    original_title: Annotated[str, Field(alias="original_name")]
+    overview: str
+    popularity: float
+    poster_path: str
+    release_date: Annotated[str, Field(alias="first_air_date")]
+    title: Annotated[str, Field(alias="name")]
+    vote_average: float
+    vote_count: int
+    genres: Annotated[list[str], Field(default_factory=list)]
 
 
 class TMDBClient:
@@ -73,13 +127,14 @@ class TMDBClient:
         response.raise_for_status()
         return response.json()
 
-    def _aggregate_results(self, url: str, params: dict[str, Any], n_results: int) -> list[dict[str, str]]:
+    def _aggregate_results(self, url: str, params: dict[str, Any], n_results: int) -> list[dict[str, Any]]:
         if n_results > MAX_N_RESULTS:
             logger.warning(
                 f"Max number of results queried at once is {MAX_N_RESULTS}. Capped query to {MAX_N_RESULTS}.",
             )
             n_results = MAX_N_RESULTS
-        results = []
+
+        results: list[dict[str, Any]] = []
         page = 0
         while len(results) < n_results:
             page += 1
@@ -144,7 +199,7 @@ class TMDBClient:
         min_votes: int | None = None,
         sort_by: str = "vote_average.desc",
         n_results: int = 20,
-    ) -> list[dict[str, Any]]:
+    ) -> list[TMDBItem]:
         """Query list of media items from TMDB."""
         params: dict[str, Any] = {
             "language": "en-US",
@@ -173,6 +228,9 @@ class TMDBClient:
         if min_votes is not None:
             params["vote_count.gte"] = min_votes
 
-        results = self._aggregate_results(url=f"/discover/{category.value}", params=params, n_results=n_results)
+        data = self._aggregate_results(url=f"/discover/{category.value}", params=params, n_results=n_results)
+        data = self._decode_genres(category=category, results=data)
 
-        return self._decode_genres(category=category, results=results)
+        item_cls = MovieItem if category == MediaCategory.movie else TVItem
+
+        return [item_cls.model_validate(item) for item in data]

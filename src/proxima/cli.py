@@ -17,6 +17,8 @@ proxima = typer.Typer()
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_OUTPUT_FIELDS = ["title", "genres", "vote_average", "overview"]
+
 
 def _load_api_key() -> str:
     load_dotenv(".env")
@@ -68,6 +70,7 @@ def discover(
     year_to: Annotated[int | None, typer.Option("--until")] = None,
     min_votes: int = 1000,
     n_results: int = 50,
+    output: Annotated[list[str], typer.Option("-o", "--output")] = DEFAULT_OUTPUT_FIELDS,
 ) -> None:
     """
     TMDB discover
@@ -86,9 +89,4 @@ def discover(
             logger.critical(f"{e}")
             raise typer.Exit(1)
 
-    output_fields = (
-        ["title", "genres", "vote_average", "overview"]
-        if category == MediaCategory.movie
-        else ["name", "genres", "vote_average", "overview"]
-    )
-    console.print_item_list(data, output_fields)
+    console.print_item_list(data, output)
