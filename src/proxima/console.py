@@ -1,6 +1,7 @@
 import itertools
 from typing import Any
 
+from rich.columns import Columns
 from rich.console import Console
 from rich.padding import Padding
 from rich.panel import Panel
@@ -23,9 +24,13 @@ PAD = (0, 1)
 CONSOLE = Console()
 
 
-def print_genres(genres_list: list[str]) -> None:
-    for ci, genre in zip(itertools.cycle(COLOR_PALETTE), genres_list):
-        CONSOLE.print(Text(genre, style=f"color({ci})"))
+def print_genres(genres_list: list[str], category: str) -> None:
+    columns = Columns(
+        [Text(genre, style=f"color({ci})") for ci, genre in zip(itertools.cycle(COLOR_PALETTE), genres_list)],
+        padding=(1, 4),
+        align="left",
+    )
+    CONSOLE.print(Panel(columns, title=f"TMDB {category} genres", title_align="left", padding=(1, 1)))
 
 
 def print_item_list(

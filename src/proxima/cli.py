@@ -60,7 +60,7 @@ def genres(ctx: typer.Context, category: Category) -> None:
     """TMDB movie genres"""
     with TMDBClient(api_token=ctx.obj["api_token"]) as tmdb:
         data = tmdb.get_genres(category=category.value)
-    console.print_genres(data)
+    console.print_genres(data, category.value)
 
 
 @proxima.command()
