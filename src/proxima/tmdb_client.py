@@ -117,8 +117,18 @@ class TMDBClient:
         try:
             encoded = [genres_encoder[name.lower()] for name in input_genres]
         except KeyError as e:
-            raise GenreError(f"Invalid genre: {e}")
+            raise GenreError(f"Invalid input genre: {e}")
         return encoded
+
+    def _decode_genres(self, category: MediaCategory, results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        tmdb_genres = self._query_genres(category=category)
+        genres_decoder: dict[int, str] = {g["id"]: g["name"] for g in tmdb_genres}
+        try:
+            for item in results:
+                item["genres"] = [genres_decoder[gid] for gid in item["genre_ids"]]
+        except KeyError as e:
+            raise GenreError(f"Unknown genre while processing results: {e}")
+        return results
 
     def get_genres(self, category: MediaCategory) -> list[str]:
         """Get list of TMDB coded genres from a media category."""
@@ -134,7 +144,7 @@ class TMDBClient:
         min_votes: int | None = None,
         sort_by: str = "vote_average.desc",
         n_results: int = 20,
-    ) -> list[dict[str, str]]:
+    ) -> list[dict[str, Any]]:
         """Query list of media items from TMDB."""
         params: dict[str, Any] = {
             "language": "en-US",
@@ -163,4 +173,6 @@ class TMDBClient:
         if min_votes is not None:
             params["vote_count.gte"] = min_votes
 
-        return self._aggregate_results(url=f"/discover/{category.value}", params=params, n_results=n_results)
+        results = self._aggregate_results(url=f"/discover/{category.value}", params=params, n_results=n_results)
+
+        return self._decode_genres(category=category, results=results)

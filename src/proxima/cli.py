@@ -87,8 +87,8 @@ def discover(
             raise typer.Exit(1)
 
     output_fields = (
-        ["title", "vote_average", "overview"]
+        ["title", "genres", "vote_average", "overview"]
         if category == MediaCategory.movie
-        else ["name", "vote_average", "overview"]
+        else ["name", "genres", "vote_average", "overview"]
     )
     console.print_item_list(data, output_fields)

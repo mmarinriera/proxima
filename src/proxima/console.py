@@ -45,9 +45,12 @@ def print_item_list(
         grid.add_column()
         grid.add_column()
         for ci, key in zip(itertools.cycle(COLOR_PALETTE), fields):
+            content = item[key]
+            if isinstance(content, list):
+                content = ", ".join(content)
             grid.add_row(
                 Padding(Text(f"{key}:", style=f"bold color({ci})"), pad=PAD),
-                Padding(Text(str(item[key]), style=f"color({ci})"), pad=PAD),
+                Padding(Text(str(content), style=f"color({ci})"), pad=PAD),
             )
 
         CONSOLE.print(Panel(grid, title=f"{idx + 1}", title_align="left"))
