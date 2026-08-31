@@ -39,7 +39,7 @@ def cli_callback(
     ] = False,
     debug_mode: Annotated[bool, typer.Option("-d", "--debug", help="Enable DEBUG logging.")] = False,
 ) -> None:
-    """Weather forecast app"""
+    """TMDB API client"""
     ctx.ensure_object(dict)
 
     if debug_mode:
