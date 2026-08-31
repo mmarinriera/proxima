@@ -26,6 +26,10 @@ policy = SpecificationPolicy(
 )
 
 
+class GenreError(Exception):
+    """Invalid TMDB genre."""
+
+
 class MediaCategory(Enum):
     movie = "movie"
     tv = "tv"
@@ -64,7 +68,7 @@ class TMDBClient:
             extensions=extensions,
             timeout=10,
         )
-        logger.debug(f"from cache: {response.extensions['hishel_from_cache']}")
+        logger.debug(f"url endpoint '{endpoint}'; from cache: {response.extensions['hishel_from_cache']}")
 
         response.raise_for_status()
         return response.json()
@@ -94,8 +98,7 @@ class TMDBClient:
 
         return results[:n_results]
 
-    def get_genres(self, category: MediaCategory) -> list[str]:
-        """Get list of TMDB coded genres from a media category."""
+    def _query_genres(self, category: MediaCategory) -> list[dict[str, Any]]:
         params: dict[str, Any] = {
             "language": "en-US",
         }
@@ -103,15 +106,28 @@ class TMDBClient:
             "hishel_ttl": 3600 * 24,  # Set long ttl for a request that rarely changes
         }
         data: dict[str, list[dict[str, Any]]] = self._get(
-            endpoint=f"/genre/{category}/list", params=params, extensions=extensions
+            endpoint=f"/genre/{category.value}/list", params=params, extensions=extensions
         )
 
-        return [item["name"] for item in data["genres"]]
+        return data["genres"]
+
+    def _encode_genres(self, category: MediaCategory, input_genres: list[str]) -> list[int]:
+        tmdb_genres = self._query_genres(category=category)
+        genres_encoder: dict[str, int] = {g["name"].lower(): g["id"] for g in tmdb_genres}
+        try:
+            encoded = [genres_encoder[name.lower()] for name in input_genres]
+        except KeyError as e:
+            raise GenreError(f"Invalid genre: {e}")
+        return encoded
+
+    def get_genres(self, category: MediaCategory) -> list[str]:
+        """Get list of TMDB coded genres from a media category."""
+        return [item["name"] for item in self._query_genres(category=category)]
 
     def discover(
         self,
         category: MediaCategory,
-        genre: int | None = None,
+        genres: list[str] | None = None,
         year_from: int | None = None,
         year_to: int | None = None,
         min_rating: float | None = None,
@@ -127,8 +143,11 @@ class TMDBClient:
             "sort_by": sort_by,
         }
 
-        if genre is not None:
-            params["with_genres"] = genre
+        if genres is not None:
+            params["with_genres"] = "|".join(
+                [str(g) for g in self._encode_genres(category=category, input_genres=genres)]
+            )
+            logger.debug(f"genres param {params['with_genres']}")
 
         time_field = TIME_FIELD_MOVIE if category == MediaCategory.movie else TIME_FIELD_TV
 

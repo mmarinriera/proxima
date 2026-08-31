@@ -9,6 +9,7 @@ from rich import print
 from proxima import console
 from proxima import get_version
 from proxima import set_logging_level
+from proxima.tmdb_client import GenreError
 from proxima.tmdb_client import MediaCategory
 from proxima.tmdb_client import TMDBClient
 
@@ -62,6 +63,7 @@ def genres(ctx: typer.Context, category: MediaCategory) -> None:
 def discover(
     ctx: typer.Context,
     category: MediaCategory,
+    genres: Annotated[list[str] | None, typer.Option("-g", "--genre")] = None,
     year_from: Annotated[int | None, typer.Option("--from")] = None,
     year_to: Annotated[int | None, typer.Option("--until")] = None,
     min_votes: int = 1000,
@@ -71,9 +73,18 @@ def discover(
     TMDB discover
     """
     with TMDBClient(api_token=ctx.obj["api_token"]) as tmdb:
-        data = tmdb.discover(
-            category=category, year_from=year_from, year_to=year_to, min_votes=min_votes, n_results=n_results
-        )
+        try:
+            data = tmdb.discover(
+                category=category,
+                genres=genres,
+                year_from=year_from,
+                year_to=year_to,
+                min_votes=min_votes,
+                n_results=n_results,
+            )
+        except GenreError as e:
+            logger.critical(f"{e}")
+            raise typer.Exit(1)
 
     output_fields = (
         ["title", "vote_average", "overview"]
