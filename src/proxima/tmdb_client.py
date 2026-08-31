@@ -1,5 +1,6 @@
 import logging
 import os
+from enum import Enum
 from typing import Any
 from typing import Self
 
@@ -14,13 +15,20 @@ MAX_N_RESULTS = 100
 DEFAULT_CACHE_TTL = 60 * 30  # 30min
 DEFAULT_CACHE_PATH = ".cache/hishel/hishel_cache.db"
 
+TIME_FIELD_MOVIE = "primary_release_date"
+TIME_FIELD_TV = "first_air_date"
+
+
 policy = SpecificationPolicy(
     cache_options=CacheOptions(
         shared=False,
     ),
 )
 
-storage = SyncSqliteStorage(database_path=DEFAULT_CACHE_PATH, default_ttl=DEFAULT_CACHE_TTL)
+
+class MediaCategory(Enum):
+    movie = "movie"
+    tv = "tv"
 
 
 class TMDBClient:
@@ -30,7 +38,7 @@ class TMDBClient:
         self.api_token = api_token or os.environ["TMDB_API_TOKEN"]
 
         self.client = SyncCacheClient(
-            storage=SyncSqliteStorage(database_path=".cache/hishel/hishel_cache.db", default_ttl=DEFAULT_CACHE_TTL),
+            storage=SyncSqliteStorage(database_path=DEFAULT_CACHE_PATH, default_ttl=DEFAULT_CACHE_TTL),
             policy=policy,
             headers={
                 "Authorization": f"Bearer {self.api_token}",
@@ -86,9 +94,8 @@ class TMDBClient:
 
         return results[:n_results]
 
-    def get_genres(self, category: str = "movie") -> list[str]:
-        if category not in ["movie", "tv"]:
-            raise ValueError("Invalid media category")
+    def get_genres(self, category: MediaCategory) -> list[str]:
+        """Get list of TMDB coded genres from a media category."""
         params: dict[str, Any] = {
             "language": "en-US",
         }
@@ -101,23 +108,9 @@ class TMDBClient:
 
         return [item["name"] for item in data["genres"]]
 
-    def tv_genres(self) -> list[str]:
-
-        params: dict[str, Any] = {
-            "language": "en-US",
-        }
-        extensions: dict[str, Any] = {
-            "hishel_ttl": 3600 * 24,  # Set long ttl for a request that rarely changes
-        }
-        data: dict[str, list[dict[str, Any]]] = self._get(
-            endpoint="/genre/tv/list", params=params, extensions=extensions
-        )
-
-        return [item["name"] for item in data["genres"]]
-
-    def discover_movies(
+    def discover(
         self,
-        *,
+        category: MediaCategory,
         genre: int | None = None,
         year_from: int | None = None,
         year_to: int | None = None,
@@ -126,7 +119,7 @@ class TMDBClient:
         sort_by: str = "vote_average.desc",
         n_results: int = 20,
     ) -> list[dict[str, str]]:
-
+        """Query list of media items from TMDB."""
         params: dict[str, Any] = {
             "language": "en-US",
             "include_adult": False,
@@ -137,11 +130,13 @@ class TMDBClient:
         if genre is not None:
             params["with_genres"] = genre
 
+        time_field = TIME_FIELD_MOVIE if category == MediaCategory.movie else TIME_FIELD_TV
+
         if year_from is not None:
-            params["primary_release_date.gte"] = f"{year_from}-01-01"
+            params[f"{time_field}.gte"] = f"{year_from}-01-01"
 
         if year_to is not None:
-            params["primary_release_date.lte"] = f"{year_to}-12-31"
+            params[f"{time_field}.lte"] = f"{year_to}-12-31"
 
         if min_rating is not None:
             params["vote_average.gte"] = min_rating
@@ -149,39 +144,4 @@ class TMDBClient:
         if min_votes is not None:
             params["vote_count.gte"] = min_votes
 
-        return self._aggregate_results(url="/discover/movie", params=params, n_results=n_results)
-
-    def discover_tv(
-        self,
-        *,
-        genre: int | None = None,
-        year_from: int | None = None,
-        year_to: int | None = None,
-        min_rating: float | None = None,
-        min_votes: int | None = None,
-        sort_by: str = "vote_average.desc",
-        n_results: int = 20,
-    ) -> list[dict[str, str]]:
-
-        params: dict[str, Any] = {
-            "language": "en-US",
-            "include_adult": False,
-            "sort_by": sort_by,
-        }
-
-        if genre is not None:
-            params["with_genres"] = genre
-
-        if year_from is not None:
-            params["first_air_date.gte"] = f"{year_from}-01-01"
-
-        if year_to is not None:
-            params["first_air_date.lte"] = f"{year_to}-12-31"
-
-        if min_rating is not None:
-            params["vote_average.gte"] = min_rating
-
-        if min_votes is not None:
-            params["vote_count.gte"] = min_votes
-
-        return self._aggregate_results(url="/discover/tv", params=params, n_results=n_results)
+        return self._aggregate_results(url=f"/discover/{category.value}", params=params, n_results=n_results)

@@ -1,6 +1,5 @@
 import logging
 import os
-from enum import Enum
 from typing import Annotated
 
 import typer
@@ -10,16 +9,12 @@ from rich import print
 from proxima import console
 from proxima import get_version
 from proxima import set_logging_level
+from proxima.tmdb_client import MediaCategory
 from proxima.tmdb_client import TMDBClient
 
 proxima = typer.Typer()
 
 logger = logging.getLogger(__name__)
-
-
-class Category(Enum):
-    movie = "movie"
-    tv = "tv"
 
 
 def _load_api_key() -> str:
@@ -56,40 +51,33 @@ def cli_callback(
 
 
 @proxima.command()
-def genres(ctx: typer.Context, category: Category) -> None:
+def genres(ctx: typer.Context, category: MediaCategory) -> None:
     """TMDB movie genres"""
     with TMDBClient(api_token=ctx.obj["api_token"]) as tmdb:
-        data = tmdb.get_genres(category=category.value)
+        data = tmdb.get_genres(category=category)
     console.print_genres(data, category.value)
 
 
 @proxima.command()
-def discover_movies(
+def discover(
     ctx: typer.Context,
+    category: MediaCategory,
     year_from: Annotated[int | None, typer.Option("--from")] = None,
     year_to: Annotated[int | None, typer.Option("--until")] = None,
     min_votes: int = 1000,
     n_results: int = 50,
 ) -> None:
     """
-    TMDB discover movies
+    TMDB discover
     """
     with TMDBClient(api_token=ctx.obj["api_token"]) as tmdb:
-        data = tmdb.discover_movies(year_from=year_from, year_to=year_to, min_votes=min_votes, n_results=n_results)
-    console.print_item_list(data, ["title", "vote_average", "overview"])
+        data = tmdb.discover(
+            category=category, year_from=year_from, year_to=year_to, min_votes=min_votes, n_results=n_results
+        )
 
-
-@proxima.command()
-def discover_tv(
-    ctx: typer.Context,
-    year_from: Annotated[int | None, typer.Option("--from")] = None,
-    year_to: Annotated[int | None, typer.Option("--until")] = None,
-    min_votes: int = 1000,
-    n_results: int = 50,
-) -> None:
-    """
-    TMDB discover tv series
-    """
-    with TMDBClient(api_token=ctx.obj["api_token"]) as tmdb:
-        data = tmdb.discover_tv(year_from=year_from, year_to=year_to, min_votes=min_votes, n_results=n_results)
-    console.print_item_list(data, ["name", "vote_average", "overview"])
+    output_fields = (
+        ["title", "vote_average", "overview"]
+        if category == MediaCategory.movie
+        else ["name", "vote_average", "overview"]
+    )
+    console.print_item_list(data, output_fields)
