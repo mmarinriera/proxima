@@ -1,5 +1,6 @@
 import logging
 import os
+from enum import Enum
 from typing import Annotated
 
 import typer
@@ -14,6 +15,11 @@ from proxima.tmdb_client import TMDBClient
 proxima = typer.Typer()
 
 logger = logging.getLogger(__name__)
+
+
+class Category(Enum):
+    movie = "movie"
+    tv = "tv"
 
 
 def _load_api_key() -> str:
@@ -47,6 +53,14 @@ def cli_callback(
 
     ctx.obj["debug"] = debug_mode
     ctx.obj["api_token"] = _load_api_key()
+
+
+@proxima.command()
+def genres(ctx: typer.Context, category: Category) -> None:
+    """TMDB movie genres"""
+    with TMDBClient(api_token=ctx.obj["api_token"]) as tmdb:
+        data = tmdb.get_genres(category=category.value)
+    console.print_genres(data)
 
 
 @proxima.command()

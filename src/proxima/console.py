@@ -23,6 +23,11 @@ PAD = (0, 1)
 CONSOLE = Console()
 
 
+def print_genres(genres_list: list[str]) -> None:
+    for ci, genre in zip(itertools.cycle(COLOR_PALETTE), genres_list):
+        CONSOLE.print(Text(genre, style=f"color({ci})"))
+
+
 def print_item_list(
     item_list: list[dict[str, Any]],
     fields: list[str] | None = None,

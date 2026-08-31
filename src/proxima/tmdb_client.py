@@ -48,10 +48,12 @@ class TMDBClient:
         self,
         endpoint: str,
         params: dict[str, Any] | None = None,
+        extensions: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         response = self.client.get(
             url=f"{self.BASE_URL}{endpoint}",
             params=params,
+            extensions=extensions,
             timeout=10,
         )
         logger.debug(f"from cache: {response.extensions['hishel_from_cache']}")
@@ -83,6 +85,35 @@ class TMDBClient:
                 break
 
         return results[:n_results]
+
+    def get_genres(self, category: str = "movie") -> list[str]:
+        if category not in ["movie", "tv"]:
+            raise ValueError("Invalid mediaf category")
+        params: dict[str, Any] = {
+            "language": "en-US",
+        }
+        extensions: dict[str, Any] = {
+            "hishel_ttl": 3600 * 24,  # Set long ttl for a request that rarely changes
+        }
+        data: dict[str, list[dict[str, Any]]] = self._get(
+            endpoint=f"/genre/{category}/list", params=params, extensions=extensions
+        )
+
+        return [item["name"] for item in data["genres"]]
+
+    def tv_genres(self) -> list[str]:
+
+        params: dict[str, Any] = {
+            "language": "en-US",
+        }
+        extensions: dict[str, Any] = {
+            "hishel_ttl": 3600 * 24,  # Set long ttl for a request that rarely changes
+        }
+        data: dict[str, list[dict[str, Any]]] = self._get(
+            endpoint="/genre/tv/list", params=params, extensions=extensions
+        )
+
+        return [item["name"] for item in data["genres"]]
 
     def discover_movies(
         self,
