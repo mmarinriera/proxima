@@ -76,7 +76,7 @@ class TMDBClient:
             data = self._get(url, params)
 
             if page == 1 and data["total_results"] < n_results:
-                logger.warning(f"Only {data['total_results']} are available.")
+                logger.warning(f"Only {data['total_results']} results are available.")
                 n_results = data["total_results"]
 
             results.extend(data["results"])
@@ -88,7 +88,7 @@ class TMDBClient:
 
     def get_genres(self, category: str = "movie") -> list[str]:
         if category not in ["movie", "tv"]:
-            raise ValueError("Invalid mediaf category")
+            raise ValueError("Invalid media category")
         params: dict[str, Any] = {
             "language": "en-US",
         }
