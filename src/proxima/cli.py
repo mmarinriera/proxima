@@ -49,24 +49,6 @@ def cli_callback(
     ctx.obj["api_token"] = _load_api_key()
 
 
-def _parse_output(data: list[dict[str, str]], output: list[str] | None = None) -> list[dict[str, str]]:
-    if not output:
-        return data
-
-    parsed_data = []
-    for item in data:
-        parsed_data.append({o: item[o] for o in output})
-    return parsed_data
-
-
-def _print_output(data: list[dict[str, str]], output: list[str] | None = None) -> None:
-    parsed_data = _parse_output(data=data, output=output)
-    for idx, item in enumerate(parsed_data):
-        print(f"- {idx + 1}: -------")
-        print(item)
-    print(f"Showed {len(data)} results.")
-
-
 @proxima.command()
 def discover_movies(
     ctx: typer.Context,
