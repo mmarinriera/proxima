@@ -10,7 +10,7 @@ from hishel.httpx import SyncCacheClient
 logger = logging.getLogger(__name__)
 
 MAX_N_RESULTS = 100
-DEFAULT_CACHE_TTL = 3600 * 2  # 2h
+DEFAULT_CACHE_TTL = 60 * 30  # 30min
 DEFAULT_CACHE_PATH = ".cache/hishel/hishel_cache.db"
 
 policy = SpecificationPolicy(
