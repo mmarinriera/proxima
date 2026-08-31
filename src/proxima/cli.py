@@ -78,9 +78,8 @@ def discover_movies(
     """
     TMDB discover movies
     """
-    tmdb = TMDBClient(api_token=ctx.obj["api_token"])
-
-    data = tmdb.discover_movies(year_from=year_from, year_to=year_to, min_votes=min_votes, n_results=n_results)
+    with TMDBClient(api_token=ctx.obj["api_token"]) as tmdb:
+        data = tmdb.discover_movies(year_from=year_from, year_to=year_to, min_votes=min_votes, n_results=n_results)
     console.print_item_list(data, ["title", "vote_average", "overview"])
 
 
@@ -95,7 +94,6 @@ def discover_tv(
     """
     TMDB discover tv series
     """
-    tmdb = TMDBClient(api_token=ctx.obj["api_token"])
-
-    data = tmdb.discover_tv(year_from=year_from, year_to=year_to, min_votes=min_votes, n_results=n_results)
+    with TMDBClient(api_token=ctx.obj["api_token"]) as tmdb:
+        data = tmdb.discover_tv(year_from=year_from, year_to=year_to, min_votes=min_votes, n_results=n_results)
     console.print_item_list(data, ["name", "vote_average", "overview"])

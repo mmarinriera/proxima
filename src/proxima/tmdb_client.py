@@ -1,6 +1,7 @@
 import logging
 import os
 from typing import Any
+from typing import Self
 
 from hishel import CacheOptions
 from hishel import SpecificationPolicy
@@ -16,7 +17,7 @@ DEFAULT_CACHE_PATH = ".cache/hishel/hishel_cache.db"
 policy = SpecificationPolicy(
     cache_options=CacheOptions(
         shared=False,
-    )
+    ),
 )
 
 storage = SyncSqliteStorage(database_path=DEFAULT_CACHE_PATH, default_ttl=DEFAULT_CACHE_TTL)
@@ -28,7 +29,7 @@ class TMDBClient:
     def __init__(self, api_token: str | None = None):
         self.api_token = api_token or os.environ["TMDB_API_TOKEN"]
 
-        self.session = SyncCacheClient(
+        self.client = SyncCacheClient(
             storage=SyncSqliteStorage(database_path=".cache/hishel/hishel_cache.db", default_ttl=DEFAULT_CACHE_TTL),
             policy=policy,
             headers={
@@ -37,12 +38,18 @@ class TMDBClient:
             },
         )
 
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *exc_details: object) -> None:
+        self.client.close()
+
     def _get(
         self,
         endpoint: str,
         params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        response = self.session.get(
+        response = self.client.get(
             url=f"{self.BASE_URL}{endpoint}",
             params=params,
             timeout=10,
@@ -55,7 +62,7 @@ class TMDBClient:
     def _aggregate_results(self, url: str, params: dict[str, Any], n_results: int) -> list[dict[str, str]]:
         if n_results > MAX_N_RESULTS:
             logger.warning(
-                f"Max number of results queried at once is {MAX_N_RESULTS}. Capped query to {MAX_N_RESULTS}."
+                f"Max number of results queried at once is {MAX_N_RESULTS}. Capped query to {MAX_N_RESULTS}.",
             )
             n_results = MAX_N_RESULTS
         results = []
