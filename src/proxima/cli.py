@@ -9,6 +9,8 @@ from rich import print
 from proxima import console
 from proxima import get_version
 from proxima import set_logging_level
+from proxima.tmdb_client import GenreError
+from proxima.tmdb_client import MediaCategory
 from proxima.tmdb_client import TMDBClient
 
 proxima = typer.Typer()
@@ -50,32 +52,43 @@ def cli_callback(
 
 
 @proxima.command()
-def discover_movies(
-    ctx: typer.Context,
-    year_from: Annotated[int | None, typer.Option("--from")] = None,
-    year_to: Annotated[int | None, typer.Option("--until")] = None,
-    min_votes: int = 1000,
-    n_results: int = 50,
-) -> None:
-    """
-    TMDB discover movies
-    """
+def genres(ctx: typer.Context, category: MediaCategory) -> None:
+    """TMDB movie genres"""
     with TMDBClient(api_token=ctx.obj["api_token"]) as tmdb:
-        data = tmdb.discover_movies(year_from=year_from, year_to=year_to, min_votes=min_votes, n_results=n_results)
-    console.print_item_list(data, ["title", "vote_average", "overview"])
+        data = tmdb.get_genres(category=category)
+    console.print_genres(data, category.value)
 
 
 @proxima.command()
-def discover_tv(
+def discover(
     ctx: typer.Context,
+    category: MediaCategory,
+    genres: Annotated[list[str] | None, typer.Option("-g", "--genre")] = None,
     year_from: Annotated[int | None, typer.Option("--from")] = None,
     year_to: Annotated[int | None, typer.Option("--until")] = None,
     min_votes: int = 1000,
     n_results: int = 50,
 ) -> None:
     """
-    TMDB discover tv series
+    TMDB discover
     """
     with TMDBClient(api_token=ctx.obj["api_token"]) as tmdb:
-        data = tmdb.discover_tv(year_from=year_from, year_to=year_to, min_votes=min_votes, n_results=n_results)
-    console.print_item_list(data, ["name", "vote_average", "overview"])
+        try:
+            data = tmdb.discover(
+                category=category,
+                genres=genres,
+                year_from=year_from,
+                year_to=year_to,
+                min_votes=min_votes,
+                n_results=n_results,
+            )
+        except GenreError as e:
+            logger.critical(f"{e}")
+            raise typer.Exit(1)
+
+    output_fields = (
+        ["title", "genres", "vote_average", "overview"]
+        if category == MediaCategory.movie
+        else ["name", "genres", "vote_average", "overview"]
+    )
+    console.print_item_list(data, output_fields)

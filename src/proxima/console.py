@@ -1,6 +1,7 @@
 import itertools
 from typing import Any
 
+from rich.columns import Columns
 from rich.console import Console
 from rich.padding import Padding
 from rich.panel import Panel
@@ -23,6 +24,15 @@ PAD = (0, 1)
 CONSOLE = Console()
 
 
+def print_genres(genres_list: list[str], category: str) -> None:
+    columns = Columns(
+        [Text(genre, style=f"color({ci})") for ci, genre in zip(itertools.cycle(COLOR_PALETTE), genres_list)],
+        padding=(1, 4),
+        align="left",
+    )
+    CONSOLE.print(Panel(columns, title=f"TMDB {category} genres", title_align="left", padding=(1, 1)))
+
+
 def print_item_list(
     item_list: list[dict[str, Any]],
     fields: list[str] | None = None,
@@ -35,9 +45,12 @@ def print_item_list(
         grid.add_column()
         grid.add_column()
         for ci, key in zip(itertools.cycle(COLOR_PALETTE), fields):
+            content = item[key]
+            if isinstance(content, list):
+                content = ", ".join(content)
             grid.add_row(
                 Padding(Text(f"{key}:", style=f"bold color({ci})"), pad=PAD),
-                Padding(Text(str(item[key]), style=f"color({ci})"), pad=PAD),
+                Padding(Text(str(content), style=f"color({ci})"), pad=PAD),
             )
 
         CONSOLE.print(Panel(grid, title=f"{idx + 1}", title_align="left"))
