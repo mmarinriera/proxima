@@ -51,7 +51,7 @@ def print_item_list(
     for idx, item in enumerate(item_list):
         grid = Table.grid(expand=True)
         grid.add_column()
-        grid.add_column(overflow="fold")
+        grid.add_column(overflow="fold", ratio=1)
         for color, key in zip(itertools.cycle(COLOR_PALETTE), fields):
             content = getattr(item, key)
             if isinstance(content, list):
