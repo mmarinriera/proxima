@@ -7,6 +7,7 @@ from hishel import CacheOptions
 from hishel import SpecificationPolicy
 from hishel import SyncSqliteStorage
 from hishel.httpx import SyncCacheClient
+from httpx import HTTPStatusError
 from pydantic import BaseModel
 from pydantic import BeforeValidator
 
@@ -92,9 +93,16 @@ class FluvialClient:
             page += 1
             params["page"] = page
             logger.debug(f"querying page {page}")
-            data = self._get(endpoint, params)
 
-            results.extend(data["data"])
+            try:
+                data = self._get(endpoint, params)
+                results.extend(data["data"])
+            except HTTPStatusError as e:
+                if e.response.status_code == 404 or e.response.status_code == 403:
+                    logger.debug(f"page {page} not found: status code {e.response.status_code}")
+                    break
+                raise
+
             logger.debug(f"results so far {len(results)}")
 
         return results[:n_results]
