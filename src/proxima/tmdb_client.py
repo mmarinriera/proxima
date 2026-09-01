@@ -174,7 +174,7 @@ class TMDBClient:
         try:
             encoded = [genres_encoder[name.lower()] for name in input_genres]
         except KeyError as e:
-            raise GenreError(f"Invalid input genre: {e}")
+            raise GenreError(f"Invalid input genre: {e}.")
         return encoded
 
     def _decode_genres(self, category: MediaCategory, results: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -184,7 +184,7 @@ class TMDBClient:
             for item in results:
                 item["genres"] = [genres_decoder[gid] for gid in item["genre_ids"]]
         except KeyError as e:
-            raise GenreError(f"Unknown genre while processing results: {e}")
+            raise GenreError(f"Unknown genre while processing results: {e}.")
         return results
 
     def get_genres(self, category: MediaCategory) -> list[str]:

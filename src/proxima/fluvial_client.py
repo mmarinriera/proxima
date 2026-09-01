@@ -101,7 +101,7 @@ class FluvialClient:
 
     def search(self, site: str, query: str, n_results: int = 20, sort: bool = True) -> list[FluvialItem]:
         if site not in AVAILABLE_SITES:
-            raise ValueError(f"Unknown site. {site}")
+            raise ValueError(f"Unknown site: '{site}'.")
 
         params = {"site": site, "query": query}
 

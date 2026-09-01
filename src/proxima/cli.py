@@ -99,7 +99,7 @@ def tmdb_discover(
                 n_results=n_results,
             )
         except GenreError as e:
-            logger.critical(f"{e}")
+            logger.critical(f"{e} Aborting")
             raise typer.Exit(1)
 
     console.print_item_list(data, output)
@@ -126,7 +126,7 @@ def fluvial_search(
                 n_results=n_results,
             )
         except ValueError as e:
-            logger.critical(f"{e}")
+            logger.critical(f"{e} Aborting.")
             raise typer.Exit(1)
 
     console.print_item_list(data, output)
