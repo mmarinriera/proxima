@@ -13,19 +13,14 @@ from pydantic import Field
 
 logger = logging.getLogger(__name__)
 
+BASE_URL = "https://api.themoviedb.org/3"
 MAX_N_RESULTS = 100
 DEFAULT_CACHE_TTL = 60 * 30  # 30min
 DEFAULT_CACHE_PATH = ".cache/hishel/tmdb_cache.db"
+LONG_TTL = 3600 * 24
 
 TIME_FIELD_MOVIE = "primary_release_date"
 TIME_FIELD_TV = "first_air_date"
-
-
-policy = SpecificationPolicy(
-    cache_options=CacheOptions(
-        shared=False,
-    ),
-)
 
 
 class GenreError(Exception):
@@ -89,14 +84,12 @@ class TVItem(TMDBItem):
 
 
 class TMDBClient:
-    BASE_URL = "https://api.themoviedb.org/3"
-
     def __init__(self, tmdb_api_token: str):
         self.api_token = tmdb_api_token
 
         self.client = SyncCacheClient(
             storage=SyncSqliteStorage(database_path=DEFAULT_CACHE_PATH, default_ttl=DEFAULT_CACHE_TTL),
-            policy=policy,
+            policy=SpecificationPolicy(cache_options=CacheOptions(shared=False)),
             headers={
                 "Authorization": f"Bearer {self.api_token}",
                 "accept": "application/json",
@@ -116,7 +109,7 @@ class TMDBClient:
         extensions: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         response = self.client.get(
-            url=f"{self.BASE_URL}{endpoint}",
+            url=f"{BASE_URL}{endpoint}",
             params=params,
             extensions=extensions,
             timeout=10,
@@ -160,7 +153,7 @@ class TMDBClient:
             "language": "en-US",
         }
         extensions: dict[str, Any] = {
-            "hishel_ttl": 3600 * 24,  # Set long ttl for a request that rarely changes
+            "hishel_ttl": LONG_TTL,  # Set long ttl for a request that rarely changes
         }
         data: dict[str, list[dict[str, Any]]] = self._get(
             endpoint=f"/genre/{category.value}/list", params=params, extensions=extensions
