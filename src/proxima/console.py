@@ -1,5 +1,6 @@
 import itertools
 import logging
+from typing import Any
 
 import typer
 from rich.columns import Columns
@@ -8,8 +9,6 @@ from rich.padding import Padding
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-
-from proxima.tmdb_client import TMDBItem
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +39,7 @@ def print_genres(genres_list: list[str], category: str) -> None:
 
 
 def print_item_list(
-    item_list: list[TMDBItem],
+    item_list: list[Any],
     fields: list[str],
 ) -> None:
     fields_not_found = [f for f in fields if not hasattr(item_list[0], f)]
@@ -52,7 +51,7 @@ def print_item_list(
     for idx, item in enumerate(item_list):
         grid = Table.grid(expand=True)
         grid.add_column()
-        grid.add_column()
+        grid.add_column(overflow="fold")
         for color, key in zip(itertools.cycle(COLOR_PALETTE), fields):
             content = getattr(item, key)
             if isinstance(content, list):

@@ -1,5 +1,4 @@
 import logging
-import os
 from enum import Enum
 from typing import Annotated
 from typing import Any
@@ -16,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 MAX_N_RESULTS = 100
 DEFAULT_CACHE_TTL = 60 * 30  # 30min
-DEFAULT_CACHE_PATH = ".cache/hishel/hishel_cache.db"
+DEFAULT_CACHE_PATH = ".cache/hishel/tmdb_cache.db"
 
 TIME_FIELD_MOVIE = "primary_release_date"
 TIME_FIELD_TV = "first_air_date"
@@ -92,8 +91,8 @@ class TVItem(TMDBItem):
 class TMDBClient:
     BASE_URL = "https://api.themoviedb.org/3"
 
-    def __init__(self, api_token: str | None = None):
-        self.api_token = api_token or os.environ["TMDB_API_TOKEN"]
+    def __init__(self, tmdb_api_token: str):
+        self.api_token = tmdb_api_token
 
         self.client = SyncCacheClient(
             storage=SyncSqliteStorage(database_path=DEFAULT_CACHE_PATH, default_ttl=DEFAULT_CACHE_TTL),
@@ -122,7 +121,10 @@ class TMDBClient:
             extensions=extensions,
             timeout=10,
         )
-        logger.debug(f"url endpoint '{endpoint}'; from cache: {response.extensions['hishel_from_cache']}")
+        logger.debug(f"url endpoint '{endpoint}'")
+        logger.debug(f"status_code: {response.status_code}")
+        logger.debug(f"request params: {params}")
+        logger.debug(f"response extensions {response.extensions}")
 
         response.raise_for_status()
         return response.json()
@@ -172,7 +174,7 @@ class TMDBClient:
         try:
             encoded = [genres_encoder[name.lower()] for name in input_genres]
         except KeyError as e:
-            raise GenreError(f"Invalid input genre: {e}")
+            raise GenreError(f"Invalid input genre: {e}.")
         return encoded
 
     def _decode_genres(self, category: MediaCategory, results: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -182,7 +184,7 @@ class TMDBClient:
             for item in results:
                 item["genres"] = [genres_decoder[gid] for gid in item["genre_ids"]]
         except KeyError as e:
-            raise GenreError(f"Unknown genre while processing results: {e}")
+            raise GenreError(f"Unknown genre while processing results: {e}.")
         return results
 
     def get_genres(self, category: MediaCategory) -> list[str]:
