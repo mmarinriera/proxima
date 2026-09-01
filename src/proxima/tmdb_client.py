@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 MAX_N_RESULTS = 100
 DEFAULT_CACHE_TTL = 60 * 30  # 30min
-DEFAULT_CACHE_PATH = ".cache/hishel/hishel_cache.db"
+DEFAULT_CACHE_PATH = ".cache/hishel/tmdb_cache.db"
 
 TIME_FIELD_MOVIE = "primary_release_date"
 TIME_FIELD_TV = "first_air_date"
