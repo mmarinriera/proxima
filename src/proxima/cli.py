@@ -118,15 +118,15 @@ def fluvial_search(
     """
     Search query on Fluvial API
     """
-    try:
-        with FluvialClient(fluvial_api_url=ctx.obj["fluvial_api_url"]) as fluvial:
+    with FluvialClient(fluvial_api_url=ctx.obj["fluvial_api_url"]) as fluvial:
+        try:
             data = fluvial.search(
                 site=site,
                 query=search_query,
                 n_results=n_results,
             )
-    except ValueError as e:
-        logger.critical(f"{e}")
-        raise typer.Exit(1)
+        except ValueError as e:
+            logger.critical(f"{e}")
+            raise typer.Exit(1)
 
     console.print_item_list(data, output)
