@@ -7,9 +7,11 @@ from typing import Any
 from typing import Self
 
 import httpx
+from hishel import AsyncSqliteStorage
 from hishel import CacheOptions
 from hishel import SpecificationPolicy
 from hishel import SyncSqliteStorage
+from hishel.httpx import AsyncCacheClient
 from hishel.httpx import SyncCacheClient
 from pydantic import BaseModel
 from pydantic import Field
@@ -292,6 +294,106 @@ class TMDBClient:
         )
 
         data = self._aggregate_results(
+            url=f"/discover/{category.value}", params=params.parse(), n_results=params.n_results
+        )
+        data = self.genres_manager.decode_genres(category=category, results=data)
+
+        item_cls = MovieItem if category == MediaCategory.movie else TVItem
+
+        return [item_cls.model_validate(item) for item in data]
+
+
+class AsyncTMDBClient:
+    def __init__(self, tmdb_api_token: str):
+        self.api_token = tmdb_api_token
+
+        self.client = AsyncCacheClient(
+            storage=AsyncSqliteStorage(database_path=DEFAULT_CACHE_PATH, default_ttl=DEFAULT_CACHE_TTL),
+            policy=DEFAULT_CACHE_POLICY,
+            headers={
+                "Authorization": f"Bearer {self.api_token}",
+                "accept": "application/json",
+            },
+        )
+
+        self.genres_manager = GenresManager(tmdb_api_token)
+
+    async def _get(
+        self,
+        endpoint: str,
+        params: dict[str, Any] | None = None,
+        extensions: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        response = await self.client.get(
+            url=f"{BASE_URL}{endpoint}",
+            params=params,
+            extensions=extensions,
+            timeout=10,
+        )
+        logger.debug(f"url endpoint '{endpoint}'")
+        logger.debug(f"status_code: {response.status_code}")
+        logger.debug(f"request params: {params}")
+        logger.debug(f"response extensions {response.extensions}")
+
+        response.raise_for_status()
+        return response.json()
+
+    async def _aggregate_results(self, url: str, params: dict[str, Any], n_results: int) -> list[dict[str, Any]]:
+        if n_results > MAX_N_RESULTS:
+            logger.warning(
+                f"Max number of results queried at once is {MAX_N_RESULTS}. Capped query to {MAX_N_RESULTS}.",
+            )
+            n_results = MAX_N_RESULTS
+
+        results: list[dict[str, Any]] = []
+        page = 0
+        while len(results) < n_results:
+            page += 1
+            params["page"] = page
+            logger.debug(f"querying page {page}")
+
+            data = await self._get(url, params)
+            results.extend(data["results"])
+
+            if page == 1 and data["total_results"] < n_results:
+                logger.warning(f"Only {data['total_results']} results are available.")
+                n_results = data["total_results"]
+
+            logger.debug(f"results so far {len(results)}")
+            if data["total_pages"] == page:
+                break
+
+        return results[:n_results]
+
+    async def get_genres(self, category: MediaCategory) -> list[str]:
+        """Get list of TMDB coded genres from a media category."""
+        return self.genres_manager.get_genres(category)
+
+    async def discover(
+        self,
+        category: MediaCategory,
+        genres: list[str] | None = None,
+        year_from: int | None = None,
+        year_to: int | None = None,
+        min_rating: float | None = None,
+        min_votes: int | None = None,
+        sort_by: str = "vote_average.desc",
+        n_results: int = 20,
+    ) -> list[TMDBItem]:
+        """Query list of media items from TMDB."""
+        params = QueryParams(
+            category=category,
+            genres_manager=self.genres_manager,
+            n_results=n_results,  # ty: ignore[unknown-argument]
+            genres=genres,
+            year_from=year_from,
+            year_to=year_to,
+            min_rating=min_rating,
+            min_votes=min_votes,
+            sort_by=sort_by,
+        )
+
+        data = await self._aggregate_results(
             url=f"/discover/{category.value}", params=params.parse(), n_results=params.n_results
         )
         data = self.genres_manager.decode_genres(category=category, results=data)
