@@ -13,6 +13,7 @@ from hishel import SpecificationPolicy
 from hishel import SyncSqliteStorage
 from hishel.httpx import AsyncCacheClient
 from hishel.httpx import SyncCacheClient
+from pydantic import AliasChoices
 from pydantic import BaseModel
 from pydantic import Field
 
@@ -36,7 +37,7 @@ class GenreError(Exception):
     """Invalid TMDB genre."""
 
 
-class MediaCategory(Enum):
+class MediaCategory(str, Enum):
     movie = "movie"
     tv = "tv"
 
@@ -46,50 +47,18 @@ class TMDBItem(BaseModel):
     genre_ids: list[int]
     id: int
     original_language: str
-    original_title: str
+    original_title: Annotated[str, Field(validation_alias=AliasChoices("original_title", "original_name"))]
     overview: str
     popularity: float
     poster_path: str
     release_date: str
-    title: str
+    release_date: Annotated[str, Field(validation_alias=AliasChoices("release_date", "first_air_date"))]
+    title: Annotated[str, Field(validation_alias=AliasChoices("title", "name"))]
     vote_average: float
     vote_count: int
     genres: Annotated[list[str], Field(default_factory=list)]
-
-
-class MovieItem(TMDBItem):
-    adult: bool
-    backdrop_path: str
-    genre_ids: list[int]
-    id: int
-    original_language: str
-    original_title: str
-    overview: str
-    popularity: float
-    poster_path: str
-    release_date: str
-    title: str
-    video: bool
-    vote_average: float
-    vote_count: int
-    genres: Annotated[list[str], Field(default_factory=list)]
-
-
-class TVItem(TMDBItem):
-    backdrop_path: str
-    genre_ids: list[int]
-    id: int
-    origin_country: list[str]
-    original_language: str
-    original_title: Annotated[str, Field(alias="original_name")]
-    overview: str
-    popularity: float
-    poster_path: str
-    release_date: Annotated[str, Field(alias="first_air_date")]
-    title: Annotated[str, Field(alias="name")]
-    vote_average: float
-    vote_count: int
-    genres: Annotated[list[str], Field(default_factory=list)]
+    adult: bool = False
+    video: bool = False
 
 
 class GenresManager:
@@ -204,11 +173,11 @@ class QueryParams:
 
 
 class TMDBClient:
-    def __init__(self, tmdb_api_token: str):
+    def __init__(self, tmdb_api_token: str, cache_storage_path: str = DEFAULT_CACHE_PATH):
         self.api_token = tmdb_api_token
 
         self.client = SyncCacheClient(
-            storage=SyncSqliteStorage(database_path=DEFAULT_CACHE_PATH, default_ttl=DEFAULT_CACHE_TTL),
+            storage=SyncSqliteStorage(database_path=cache_storage_path, default_ttl=DEFAULT_CACHE_TTL),
             policy=DEFAULT_CACHE_POLICY,
             headers={
                 "Authorization": f"Bearer {self.api_token}",
@@ -298,17 +267,15 @@ class TMDBClient:
         )
         data = self.genres_manager.decode_genres(category=category, results=data)
 
-        item_cls = MovieItem if category == MediaCategory.movie else TVItem
-
-        return [item_cls.model_validate(item) for item in data]
+        return [TMDBItem.model_validate(item) for item in data]
 
 
 class AsyncTMDBClient:
-    def __init__(self, tmdb_api_token: str):
+    def __init__(self, tmdb_api_token: str, cache_storage_path: str = DEFAULT_CACHE_PATH):
         self.api_token = tmdb_api_token
 
         self.client = AsyncCacheClient(
-            storage=AsyncSqliteStorage(database_path=DEFAULT_CACHE_PATH, default_ttl=DEFAULT_CACHE_TTL),
+            storage=AsyncSqliteStorage(database_path=cache_storage_path, default_ttl=DEFAULT_CACHE_TTL),
             policy=DEFAULT_CACHE_POLICY,
             headers={
                 "Authorization": f"Bearer {self.api_token}",
@@ -317,6 +284,12 @@ class AsyncTMDBClient:
         )
 
         self.genres_manager = GenresManager(tmdb_api_token)
+
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(self, *exc_details: object) -> None:
+        await self.client.aclose()
 
     async def _get(
         self,
@@ -398,6 +371,4 @@ class AsyncTMDBClient:
         )
         data = self.genres_manager.decode_genres(category=category, results=data)
 
-        item_cls = MovieItem if category == MediaCategory.movie else TVItem
-
-        return [item_cls.model_validate(item) for item in data]
+        return [TMDBItem.model_validate(item) for item in data]
