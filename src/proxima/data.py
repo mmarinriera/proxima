@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+from proxima.fluvial_client import FluvialItem
 from proxima.tmdb_client import TMDBItem
 
 
@@ -13,6 +14,13 @@ class DiscoverQuery(BaseModel):
     n_results: int = 20
 
 
+class FluvialSearchQuery(BaseModel):
+    site: str
+    query: str
+    n_results: int = 20
+    sort: bool = True
+
+
 class TMDBGenresResponse(BaseModel):
     genres: list[str]
 
@@ -20,3 +28,8 @@ class TMDBGenresResponse(BaseModel):
 class TMDBDiscoverResponse(BaseModel):
     n_results: int
     items_list: list[TMDBItem]
+
+
+class FluvialSearchResponse(BaseModel):
+    n_results: int
+    items_list: list[FluvialItem]
