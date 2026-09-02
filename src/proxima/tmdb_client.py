@@ -43,14 +43,14 @@ class MediaCategory(str, Enum):
 
 
 class TMDBItem(BaseModel):
-    backdrop_path: str
+    backdrop_path: str | None
     genre_ids: list[int]
     id: int
     original_language: str
     original_title: Annotated[str, Field(validation_alias=AliasChoices("original_title", "original_name"))]
     overview: str
     popularity: float
-    poster_path: str
+    poster_path: str | None
     release_date: str
     release_date: Annotated[str, Field(validation_alias=AliasChoices("release_date", "first_air_date"))]
     title: Annotated[str, Field(validation_alias=AliasChoices("title", "name"))]
