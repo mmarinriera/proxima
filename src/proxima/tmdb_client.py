@@ -312,12 +312,6 @@ class AsyncTMDBClient:
         return response.json()
 
     async def _aggregate_results(self, url: str, params: dict[str, Any], n_results: int) -> list[dict[str, Any]]:
-        if n_results > MAX_N_RESULTS:
-            logger.warning(
-                f"Max number of results queried at once is {MAX_N_RESULTS}. Capped query to {MAX_N_RESULTS}.",
-            )
-            n_results = MAX_N_RESULTS
-
         results: list[dict[str, Any]] = []
         page = 0
         while len(results) < n_results:
