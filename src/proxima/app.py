@@ -18,6 +18,7 @@ from proxima.data import TMDBDiscoverResponse
 from proxima.data import TMDBGenresResponse
 from proxima.fluvial_client import AsyncFluvialClient
 from proxima.tmdb_client import AsyncTMDBClient
+from proxima.tmdb_client import GenreError
 from proxima.tmdb_client import MediaCategory
 
 logger = logging.getLogger(__name__)
@@ -57,11 +58,27 @@ app = FastAPI(lifespan=lifespan)
 
 # Exception handlers
 @app.exception_handler(ConnectError)
-async def unicorn_exception_handler(request: Request, exc: ConnectError):
+async def connect_error_exception_handler(request: Request, exc: ConnectError):
     service = "TMDB" if "tmdb" in str(request.url) else "Fluvial"
     return JSONResponse(
         status_code=442,
-        content={"message": f"Service is not available: {service} "},
+        content={"message": f"Service is not available: {service}."},
+    )
+
+
+@app.exception_handler(GenreError)
+async def genre_error_exception_handler(request: Request, exc: GenreError):
+    return JSONResponse(
+        status_code=443,
+        content={"message": f"{exc}"},
+    )
+
+
+@app.exception_handler(ValueError)
+async def value_error_exception_handler(request: Request, exc: ValueError):
+    return JSONResponse(
+        status_code=444,
+        content={"message": f"{exc}"},
     )
 
 
