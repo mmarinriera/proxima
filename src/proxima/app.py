@@ -58,10 +58,10 @@ app = FastAPI(lifespan=lifespan)
 # Exception handlers
 @app.exception_handler(ConnectError)
 async def unicorn_exception_handler(request: Request, exc: ConnectError):
-    end_point = str(request.url).split("?")[0]
+    service = "TMDB" if "tmdb" in str(request.url) else "Fluvial"
     return JSONResponse(
         status_code=442,
-        content={"message": f"Endpoint {end_point} is not available."},
+        content={"message": f"Service is not available: {service} "},
     )
 
 
