@@ -6,8 +6,9 @@ from pydantic import BaseModel
 from pydantic import BeforeValidator
 from pydantic import Field
 
-
 # Clients data models
+
+
 class TMDBItem(BaseModel):
     backdrop_path: str | None
     genre_ids: list[int]
