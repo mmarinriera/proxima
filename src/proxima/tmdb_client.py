@@ -2,7 +2,6 @@ import logging
 from dataclasses import dataclass
 from dataclasses import field
 from enum import Enum
-from typing import Annotated
 from typing import Any
 from typing import Self
 
@@ -13,9 +12,8 @@ from hishel import SpecificationPolicy
 from hishel import SyncSqliteStorage
 from hishel.httpx import AsyncCacheClient
 from hishel.httpx import SyncCacheClient
-from pydantic import AliasChoices
-from pydantic import BaseModel
-from pydantic import Field
+
+from proxima.data import TMDBItem
 
 logger = logging.getLogger(__name__)
 
@@ -40,25 +38,6 @@ class GenreError(Exception):
 class MediaCategory(str, Enum):
     movie = "movie"
     tv = "tv"
-
-
-class TMDBItem(BaseModel):
-    backdrop_path: str | None
-    genre_ids: list[int]
-    id: int
-    original_language: str
-    original_title: Annotated[str, Field(validation_alias=AliasChoices("original_title", "original_name"))]
-    overview: str
-    popularity: float
-    poster_path: str | None
-    release_date: str
-    release_date: Annotated[str, Field(validation_alias=AliasChoices("release_date", "first_air_date"))]
-    title: Annotated[str, Field(validation_alias=AliasChoices("title", "name"))]
-    vote_average: float
-    vote_count: int
-    genres: Annotated[list[str], Field(default_factory=list)]
-    adult: bool = False
-    video: bool = False
 
 
 class GenresManager:

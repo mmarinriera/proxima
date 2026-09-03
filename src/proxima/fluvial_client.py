@@ -1,5 +1,4 @@
 import logging
-from typing import Annotated
 from typing import Any
 from typing import Self
 
@@ -10,8 +9,8 @@ from hishel import SyncSqliteStorage
 from hishel.httpx import AsyncCacheClient
 from hishel.httpx import SyncCacheClient
 from httpx import HTTPStatusError
-from pydantic import BaseModel
-from pydantic import BeforeValidator
+
+from proxima.data import FluvialItem
 
 logger = logging.getLogger(__name__)
 
@@ -25,26 +24,6 @@ AVAILABLE_SITES = (
     "piratebay",  # Supports search, trending (no paging), and recent (no paging)
     # "torlock", # Responds ok, but items have no magnet link
 )
-
-
-def _clean_scraped_string(value: Any) -> Any:
-    if isinstance(value, str):
-        value = value.replace("\u00a0", " ").replace("N/A", "").strip()
-        return value or "0"
-    return value
-
-
-class FluvialItem(BaseModel):
-    name: Annotated[str, BeforeValidator(_clean_scraped_string)]
-    size: Annotated[str, BeforeValidator(_clean_scraped_string)]
-    date: Annotated[str, BeforeValidator(_clean_scraped_string)]
-    seeders: Annotated[int, BeforeValidator(_clean_scraped_string)]
-    leechers: Annotated[int, BeforeValidator(_clean_scraped_string)]
-    url: str
-    category: str = ""
-    uploader: str = ""
-    hash: str = ""
-    magnet: str = ""
 
 
 class FluvialClient:
