@@ -26,9 +26,9 @@ logger = logging.getLogger(__name__)
 
 class Settings(BaseSettings):
     TMDB_API_TOKEN: str
-    TMDB_CACHE_STORAGE_PATH: str
+    TMDB_CACHE_STORAGE_PATH: str = ".cache/tmdb_cache.db"
     FLUVIAL_API_URL: str
-    FLUVIAL_CACHE_STORAGE_PATH: str
+    FLUVIAL_CACHE_STORAGE_PATH: str = ".cache/fluvial_cache.db"
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
