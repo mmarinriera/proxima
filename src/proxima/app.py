@@ -6,6 +6,8 @@ from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import Query
 from fastapi import Request
+from fastapi.responses import JSONResponse
+from httpx import ConnectError
 from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
 
@@ -53,6 +55,17 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
+# Exception handlers
+@app.exception_handler(ConnectError)
+async def unicorn_exception_handler(request: Request, exc: ConnectError):
+    end_point = str(request.url).split("?")[0]
+    return JSONResponse(
+        status_code=442,
+        content={"message": f"Endpoint {end_point} is not available."},
+    )
+
+
+# Dependencies
 def get_tmdb_client(request: Request) -> AsyncTMDBClient:
     return request.app.state.tmdb
 
@@ -61,6 +74,7 @@ def get_fluvial_client(request: Request) -> AsyncFluvialClient:
     return request.app.state.fluvial
 
 
+# Path operations
 @app.get("/tmdb/genres/{category}")
 async def tmdb_genres(
     category: MediaCategory,
