@@ -49,7 +49,7 @@ class FluvialItem(BaseModel):
 
 class FluvialClient:
     def __init__(self, fluvial_api_url: str, cache_storage_path: str = DEFAULT_CACHE_PATH):
-        self.base_url = fluvial_api_url
+        self.base_url = f"{fluvial_api_url}/api/v1/"
 
         self.client = SyncCacheClient(
             storage=SyncSqliteStorage(database_path=cache_storage_path, default_ttl=DEFAULT_CACHE_TTL),
@@ -125,7 +125,7 @@ class FluvialClient:
 
 class AsyncFluvialClient:
     def __init__(self, fluvial_api_url: str, cache_storage_path: str = DEFAULT_CACHE_PATH):
-        self.base_url = fluvial_api_url
+        self.base_url = f"{fluvial_api_url}/api/v1/"
 
         self.client = AsyncCacheClient(
             storage=AsyncSqliteStorage(database_path=cache_storage_path, default_ttl=DEFAULT_CACHE_TTL),
