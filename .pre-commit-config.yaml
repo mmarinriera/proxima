@@ -2,7 +2,7 @@ exclude: ^(resources|tests/resources)/
 
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.0
+    rev: v0.16.4
     hooks:
       - id: ruff
         name: Run ruff to auto-fix lint errors
@@ -21,7 +21,7 @@ repos:
         language_version: python3
 
   - repo: https://github.com/astral-sh/ty-pre-commit
-    rev: v0.0.73
+    rev: v0.0.74
     hooks:
       - id: ty
 
@@ -33,13 +33,13 @@ repos:
         args: ["--failed"]
 
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.16.5
+    rev: v4.18.0
     hooks:
       - id: commitizen
         stages: [commit-msg]
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.11.31
+    rev: 0.12.5
     hooks:
       - id: uv-lock
         name: Update uv lock file
@@ -51,7 +51,7 @@ repos:
         files: ^src/fetx/
 
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: v2.25.3
+    rev: v2.28.0
     hooks:
       - id: pyproject-fmt
 
