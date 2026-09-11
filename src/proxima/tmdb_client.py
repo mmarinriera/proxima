@@ -13,6 +13,7 @@ from hishel import SyncSqliteStorage
 from hishel.httpx import AsyncCacheClient
 from hishel.httpx import SyncCacheClient
 
+from proxima.data import SortCriteria
 from proxima.data import TMDBItem
 
 logger = logging.getLogger(__name__)
@@ -101,7 +102,8 @@ class QueryParams:
     year_to: int | None = None
     min_rating: float | None = None
     min_votes: int | None = None
-    sort_by: str = "vote_average.desc"
+    sort_by: SortCriteria = SortCriteria.vote_average
+    ascending: bool = False
     language: str = "en-US"
     include_adult: bool = False
     include_video: bool = False
@@ -125,7 +127,6 @@ class QueryParams:
             "language": self.language,
             "include_adult": self.include_adult,
             "include_video": self.include_video,
-            "sort_by": self.sort_by,
         }
 
         if self.genres is not None:
@@ -147,6 +148,14 @@ class QueryParams:
 
         if self.min_votes is not None:
             params["vote_count.gte"] = self.min_votes
+
+        if self.sort_by == SortCriteria.release_date:
+            sort_str = time_field
+        elif self.sort_by == SortCriteria.title and self.category == MediaCategory.tv:
+            sort_str = "name"
+        else:
+            sort_str = self.sort_by.value
+        params["sort_by"] = f"{sort_str}.{'asc' if self.ascending else 'desc'}"
 
         return params
 
@@ -225,7 +234,8 @@ class TMDBClient:
         year_to: int | None = None,
         min_rating: float | None = None,
         min_votes: int | None = None,
-        sort_by: str = "vote_average.desc",
+        sort_by: SortCriteria = SortCriteria.vote_average,
+        ascending: bool = False,
         n_results: int = 20,
     ) -> list[TMDBItem]:
         """Query list of media items from TMDB."""
@@ -239,6 +249,7 @@ class TMDBClient:
             min_rating=min_rating,
             min_votes=min_votes,
             sort_by=sort_by,
+            ascending=ascending,
         )
 
         data = self._aggregate_results(
@@ -323,7 +334,8 @@ class AsyncTMDBClient:
         year_to: int | None = None,
         min_rating: float | None = None,
         min_votes: int | None = None,
-        sort_by: str = "vote_average.desc",
+        sort_by: SortCriteria = SortCriteria.vote_average,
+        ascending: bool = False,
         n_results: int = 20,
     ) -> list[TMDBItem]:
         """Query list of media items from TMDB."""
@@ -337,6 +349,7 @@ class AsyncTMDBClient:
             min_rating=min_rating,
             min_votes=min_votes,
             sort_by=sort_by,
+            ascending=ascending,
         )
 
         data = await self._aggregate_results(
