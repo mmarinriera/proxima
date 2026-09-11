@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Annotated
 from typing import Any
 
@@ -5,6 +6,15 @@ from pydantic import AliasChoices
 from pydantic import BaseModel
 from pydantic import BeforeValidator
 from pydantic import Field
+
+
+class SortCriteria(str, Enum):
+    popularity = "popularity"
+    release_date = "release_date"
+    title = "title"
+    vote_average = "vote_average"
+    vote_count = "vote_count"
+
 
 # Clients data models
 
@@ -18,7 +28,6 @@ class TMDBItem(BaseModel):
     overview: str
     popularity: float
     poster_path: str | None
-    release_date: str
     release_date: Annotated[str, Field(validation_alias=AliasChoices("release_date", "first_air_date"))]
     title: Annotated[str, Field(validation_alias=AliasChoices("title", "name"))]
     vote_average: float
@@ -57,7 +66,8 @@ class DiscoverQuery(BaseModel):
     year_to: int | None = None
     min_rating: float | None = None
     min_votes: int | None = None
-    sort_by: str = "vote_average.desc"
+    sort_by: SortCriteria = SortCriteria.vote_average
+    ascending: bool = False
     n_results: int = 20
 
 

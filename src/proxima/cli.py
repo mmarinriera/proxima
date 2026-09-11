@@ -9,6 +9,7 @@ from rich import print
 from proxima import console
 from proxima import get_version
 from proxima import set_logging_level
+from proxima.data import SortCriteria
 from proxima.fluvial_client import FluvialClient
 from proxima.tmdb_client import GenreError
 from proxima.tmdb_client import MediaCategory
@@ -81,8 +82,10 @@ def tmdb_discover(
     genres: Annotated[list[str] | None, typer.Option("-g", "--genre")] = None,
     year_from: Annotated[int | None, typer.Option("--from")] = None,
     year_to: Annotated[int | None, typer.Option("--until")] = None,
-    min_votes: int = 1000,
-    n_results: int = 50,
+    min_votes: int = 100,
+    sort_by: Annotated[SortCriteria, typer.Option("-s", "--sort-by")] = SortCriteria.vote_average,
+    ascending: Annotated[bool, typer.Option("-a", "--ascending")] = False,
+    n_results: int = 20,
     output: Annotated[list[str], typer.Option("-o")] = TMDB_DEFAULT_OUTPUT_FIELDS,
 ) -> None:
     """
@@ -96,6 +99,8 @@ def tmdb_discover(
                 year_from=year_from,
                 year_to=year_to,
                 min_votes=min_votes,
+                sort_by=sort_by,
+                ascending=ascending,
                 n_results=n_results,
             )
         except GenreError as e:
