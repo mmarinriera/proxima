@@ -58,7 +58,7 @@ def cli_callback(
 
 @proxima.command()
 def genres(ctx: typer.Context, category: MediaCategory) -> None:
-    """TMDB movie genres"""
+    """Query TMDB genre categories."""
     with TMDBClient(tmdb_api_token=ctx.obj["tmdb_api_token"]) as tmdb:
         data = tmdb.get_genres(category=category)
     console.print_genres(data, category.value)
@@ -78,7 +78,7 @@ def discover(
     output: Annotated[list[str], typer.Option("-o")] = TMDB_DEFAULT_OUTPUT_FIELDS,
 ) -> None:
     """
-    TMDB discover
+    Query TMDB discover lists.
     """
     with TMDBClient(tmdb_api_token=ctx.obj["tmdb_api_token"]) as tmdb:
         try:

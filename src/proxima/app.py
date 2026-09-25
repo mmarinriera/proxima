@@ -74,7 +74,7 @@ async def tmdb_genres(
     category: MediaCategory,
     tmdb: Annotated[AsyncTMDBClient, Depends(get_tmdb_client)],
 ) -> TMDBGenresResponse:
-
+    """Show the TMDBgenre categories for movies or TV shows."""
     result = await tmdb.get_genres(category=category)
     return TMDBGenresResponse(genres=result)
 
@@ -85,6 +85,6 @@ async def tmdb_discover(
     discover_query: Annotated[DiscoverQuery, Query()],
     tmdb: Annotated[AsyncTMDBClient, Depends(get_tmdb_client)],
 ) -> TMDBDiscoverResponse:
-
+    """TMDB Discover lists for movies and TV shows."""
     result = await tmdb.discover(category=category, **discover_query.model_dump())
     return TMDBDiscoverResponse(n_results=len(result), items_list=result)
