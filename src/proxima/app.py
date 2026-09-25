@@ -12,11 +12,8 @@ from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
 
 from proxima.data import DiscoverQuery
-from proxima.data import FluvialSearchQuery
-from proxima.data import FluvialSearchResponse
 from proxima.data import TMDBDiscoverResponse
 from proxima.data import TMDBGenresResponse
-from proxima.fluvial_client import AsyncFluvialClient
 from proxima.tmdb_client import AsyncTMDBClient
 from proxima.tmdb_client import GenreError
 from proxima.tmdb_client import MediaCategory
@@ -27,8 +24,6 @@ logger = logging.getLogger(__name__)
 class Settings(BaseSettings):
     TMDB_API_TOKEN: str
     TMDB_CACHE_STORAGE_PATH: str = ".cache/tmdb_cache.db"
-    FLUVIAL_API_URL: str
-    FLUVIAL_CACHE_STORAGE_PATH: str = ".cache/fluvial_cache.db"
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
@@ -42,13 +37,8 @@ async def lifespan(app: FastAPI):
             tmdb_api_token=settings.TMDB_API_TOKEN,
             cache_storage_path=settings.TMDB_CACHE_STORAGE_PATH,
         ) as tmdb,
-        AsyncFluvialClient(
-            fluvial_api_url=settings.FLUVIAL_API_URL,
-            cache_storage_path=settings.FLUVIAL_CACHE_STORAGE_PATH,
-        ) as fluvial,
     ):
         app.state.tmdb = tmdb
-        app.state.fluvial = fluvial
 
         yield
 
@@ -59,10 +49,9 @@ app = FastAPI(lifespan=lifespan)
 # Exception handlers
 @app.exception_handler(ConnectError)
 async def connect_error_exception_handler(request: Request, exc: ConnectError):
-    service = "TMDB" if "tmdb" in str(request.url) else "Fluvial"
     return JSONResponse(
         status_code=442,
-        content={"message": f"Service is not available: {service}."},
+        content={"message": "TMDB API is not available."},
     )
 
 
@@ -74,21 +63,9 @@ async def genre_error_exception_handler(request: Request, exc: GenreError):
     )
 
 
-@app.exception_handler(ValueError)
-async def value_error_exception_handler(request: Request, exc: ValueError):
-    return JSONResponse(
-        status_code=444,
-        content={"message": f"{exc}"},
-    )
-
-
 # Dependencies
 def get_tmdb_client(request: Request) -> AsyncTMDBClient:
     return request.app.state.tmdb
-
-
-def get_fluvial_client(request: Request) -> AsyncFluvialClient:
-    return request.app.state.fluvial
 
 
 # Path operations
@@ -97,7 +74,7 @@ async def tmdb_genres(
     category: MediaCategory,
     tmdb: Annotated[AsyncTMDBClient, Depends(get_tmdb_client)],
 ) -> TMDBGenresResponse:
-
+    """Show the TMDBgenre categories for movies or TV shows."""
     result = await tmdb.get_genres(category=category)
     return TMDBGenresResponse(genres=result)
 
@@ -108,16 +85,6 @@ async def tmdb_discover(
     discover_query: Annotated[DiscoverQuery, Query()],
     tmdb: Annotated[AsyncTMDBClient, Depends(get_tmdb_client)],
 ) -> TMDBDiscoverResponse:
-
+    """TMDB Discover lists for movies and TV shows."""
     result = await tmdb.discover(category=category, **discover_query.model_dump())
     return TMDBDiscoverResponse(n_results=len(result), items_list=result)
-
-
-@app.get("/fluvial/search")
-async def fluvial_search(
-    search_query: Annotated[FluvialSearchQuery, Query()],
-    fluvial: Annotated[AsyncFluvialClient, Depends(get_fluvial_client)],
-) -> FluvialSearchResponse:
-
-    result = await fluvial.search(**search_query.model_dump())
-    return FluvialSearchResponse(n_results=len(result), items_list=result)

@@ -42,6 +42,14 @@ class MediaCategory(str, Enum):
 
 
 class GenresManager:
+    """
+    Class in charge of updating TMDB genre codes and parsing for queries.
+
+    TMDB API queries only deal with genre codes,
+    so genre category keywords need to be encoded when quering the database,
+    and genre codes need to be decoded from query responses.
+    """
+
     def __init__(self, api_token: str) -> None:
         self.api_token = api_token
         self.genres = {
@@ -60,6 +68,7 @@ class GenresManager:
         }
 
     def _query_genres(self, category: MediaCategory) -> list[dict[str, Any]]:
+        """Update genres list for a specific media category."""
         headers = {
             "Authorization": f"Bearer {self.api_token}",
             "accept": "application/json",
@@ -75,6 +84,7 @@ class GenresManager:
         return [item["name"] for item in self.genres[category]]
 
     def encode_genres(self, category: MediaCategory, input_genres: list[str]) -> list[int]:
+        """Encode a list of genre categories."""
         genres_encoder: dict[str, int] = self.genres_encoder[category]
         try:
             encoded = [genres_encoder[name.lower()] for name in input_genres]
@@ -83,6 +93,7 @@ class GenresManager:
         return encoded
 
     def decode_genres(self, category: MediaCategory, results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Decode genres from query response data."""
         genres_decoder: dict[int, str] = self.genres_decoder[category]
         try:
             for item in results:
@@ -94,6 +105,8 @@ class GenresManager:
 
 @dataclass
 class QueryParams:
+    """Parse and process TMDB client query parameters."""
+
     category: MediaCategory
     genres_manager: GenresManager
     n_results: int
@@ -161,6 +174,8 @@ class QueryParams:
 
 
 class TMDBClient:
+    """Synchronous TMDB client."""
+
     def __init__(self, tmdb_api_token: str, cache_storage_path: str = DEFAULT_CACHE_PATH):
         self.api_token = tmdb_api_token
 
@@ -202,6 +217,7 @@ class TMDBClient:
         return response.json()
 
     def _aggregate_results(self, url: str, params: dict[str, Any], n_results: int) -> list[dict[str, Any]]:
+        """Iteratively query list pages until target number of results is obtained."""
         results: list[dict[str, Any]] = []
         page = 0
         while len(results) < n_results:
@@ -261,6 +277,8 @@ class TMDBClient:
 
 
 class AsyncTMDBClient:
+    """Async TMDB client."""
+
     def __init__(self, tmdb_api_token: str, cache_storage_path: str = DEFAULT_CACHE_PATH):
         self.api_token = tmdb_api_token
 
@@ -302,6 +320,7 @@ class AsyncTMDBClient:
         return response.json()
 
     async def _aggregate_results(self, url: str, params: dict[str, Any], n_results: int) -> list[dict[str, Any]]:
+        """Iteratively query list pages until target number of results is obtained."""
         results: list[dict[str, Any]] = []
         page = 0
         while len(results) < n_results:

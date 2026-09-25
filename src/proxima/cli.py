@@ -10,7 +10,6 @@ from proxima import console
 from proxima import get_version
 from proxima import set_logging_level
 from proxima.data import SortCriteria
-from proxima.fluvial_client import FluvialClient
 from proxima.tmdb_client import GenreError
 from proxima.tmdb_client import MediaCategory
 from proxima.tmdb_client import TMDBClient
@@ -21,9 +20,6 @@ logger = logging.getLogger(__name__)
 
 TMDB_DEFAULT_OUTPUT_FIELDS = ["title", "genres", "vote_average", "overview"]
 
-FLUVIAL_DEFAULT_SITE = "piratebay"
-FLUVIAL_DEFAULT_OUTPUT_FIELDS = ["name", "seeders", "magnet"]
-
 
 def _load_env(ctx: typer.Context) -> None:
     load_dotenv(".env")
@@ -33,13 +29,6 @@ def _load_env(ctx: typer.Context) -> None:
         raise typer.Exit(1)
 
     ctx.obj["tmdb_api_token"] = tmdb_api_key
-
-    fluvial_api_url = os.getenv("FLUVIAL_API_URL")
-    if fluvial_api_url is None:
-        logger.critical("Fluvial API URL not found")
-        raise typer.Exit(1)
-
-    ctx.obj["fluvial_api_url"] = fluvial_api_url
 
 
 def version_callback(value: bool) -> None:
@@ -68,15 +57,15 @@ def cli_callback(
 
 
 @proxima.command()
-def tmdb_genres(ctx: typer.Context, category: MediaCategory) -> None:
-    """TMDB movie genres"""
+def genres(ctx: typer.Context, category: MediaCategory) -> None:
+    """Query TMDB genre categories."""
     with TMDBClient(tmdb_api_token=ctx.obj["tmdb_api_token"]) as tmdb:
         data = tmdb.get_genres(category=category)
     console.print_genres(data, category.value)
 
 
 @proxima.command()
-def tmdb_discover(
+def discover(
     ctx: typer.Context,
     category: MediaCategory,
     genres: Annotated[list[str] | None, typer.Option("-g", "--genre")] = None,
@@ -89,7 +78,7 @@ def tmdb_discover(
     output: Annotated[list[str], typer.Option("-o")] = TMDB_DEFAULT_OUTPUT_FIELDS,
 ) -> None:
     """
-    TMDB discover
+    Query TMDB discover lists.
     """
     with TMDBClient(tmdb_api_token=ctx.obj["tmdb_api_token"]) as tmdb:
         try:
@@ -105,33 +94,6 @@ def tmdb_discover(
             )
         except GenreError as e:
             logger.critical(f"{e} Aborting")
-            raise typer.Exit(1)
-
-    console.print_item_list(data, output)
-
-
-@proxima.command()
-def fluvial_search(
-    ctx: typer.Context,
-    search_query: Annotated[str, typer.Argument(help="Search query.")],
-    site: Annotated[str, typer.Option("-s", "--site", help="Search site.")] = FLUVIAL_DEFAULT_SITE,
-    n_results: Annotated[int, typer.Option("-n", "--n-results", help="Number of results returned.")] = 50,
-    output: Annotated[
-        list[str], typer.Option("-o", "--output", help="Specify search result fields to be shown.")
-    ] = FLUVIAL_DEFAULT_OUTPUT_FIELDS,
-) -> None:
-    """
-    Search query on Fluvial API
-    """
-    with FluvialClient(fluvial_api_url=ctx.obj["fluvial_api_url"]) as fluvial:
-        try:
-            data = fluvial.search(
-                site=site,
-                query=search_query,
-                n_results=n_results,
-            )
-        except ValueError as e:
-            logger.critical(f"{e} Aborting.")
             raise typer.Exit(1)
 
     console.print_item_list(data, output)

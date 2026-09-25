@@ -25,6 +25,13 @@ def _init_logging() -> None:
 
 
 def set_logging_level(level: int = logging.DEBUG) -> None:
+    """
+    Set the logging level for the whole package.
+
+    Args:
+        level: Logging level.
+
+    """
     logger = logging.getLogger(__name__)
     logger.setLevel(level)
 
