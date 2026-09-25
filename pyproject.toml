@@ -4,7 +4,7 @@ requires = [ "uv-build>=0.12.2,<0.13" ]
 
 [project]
 name = "proxima"
-version = "0.0.0"
+version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 license-files = [ "LICENSE" ]
