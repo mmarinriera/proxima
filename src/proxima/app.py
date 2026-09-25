@@ -51,7 +51,7 @@ app = FastAPI(lifespan=lifespan)
 async def connect_error_exception_handler(request: Request, exc: ConnectError):
     return JSONResponse(
         status_code=442,
-        content={"message": "TMDB service is not available."},
+        content={"message": "TMDB API is not available."},
     )
 
 
