@@ -1,10 +1,8 @@
 from enum import Enum
 from typing import Annotated
-from typing import Any
 
 from pydantic import AliasChoices
 from pydantic import BaseModel
-from pydantic import BeforeValidator
 from pydantic import Field
 
 
@@ -14,9 +12,6 @@ class SortCriteria(str, Enum):
     title = "title"
     vote_average = "vote_average"
     vote_count = "vote_count"
-
-
-# Clients data models
 
 
 class TMDBItem(BaseModel):
@@ -37,29 +32,6 @@ class TMDBItem(BaseModel):
     video: bool = False
 
 
-def _clean_scraped_string(value: Any) -> Any:
-    if isinstance(value, str):
-        value = value.replace("\u00a0", " ").replace("N/A", "").strip()
-        return value or "0"
-    return value
-
-
-class FluvialItem(BaseModel):
-    name: Annotated[str, BeforeValidator(_clean_scraped_string)]
-    size: Annotated[str, BeforeValidator(_clean_scraped_string)]
-    date: Annotated[str, BeforeValidator(_clean_scraped_string)]
-    seeders: Annotated[int, BeforeValidator(_clean_scraped_string)]
-    leechers: Annotated[int, BeforeValidator(_clean_scraped_string)]
-    url: str
-    category: str = ""
-    uploader: str = ""
-    hash: str = ""
-    magnet: str = ""
-
-
-# API data models
-
-
 class DiscoverQuery(BaseModel):
     genres: list[str] | None = None
     year_from: int | None = None
@@ -71,13 +43,6 @@ class DiscoverQuery(BaseModel):
     n_results: int = 20
 
 
-class FluvialSearchQuery(BaseModel):
-    site: str
-    query: str
-    n_results: int = 20
-    sort: bool = True
-
-
 class TMDBGenresResponse(BaseModel):
     genres: list[str]
 
@@ -85,8 +50,3 @@ class TMDBGenresResponse(BaseModel):
 class TMDBDiscoverResponse(BaseModel):
     n_results: int
     items_list: list[TMDBItem]
-
-
-class FluvialSearchResponse(BaseModel):
-    n_results: int
-    items_list: list[FluvialItem]
